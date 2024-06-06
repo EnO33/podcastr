@@ -49,11 +49,15 @@ const formSchema = z.object({
 const CreatePodcast = () => {
   const router = useRouter();
   const [imagePrompt, setImagePrompt] = useState("");
-  const [imageStorageId, setImageStorageId] = useState<Id<"_storage"> | null>(null);
+  const [imageStorageId, setImageStorageId] = useState<Id<"_storage"> | null>(
+    null
+  );
   const [imageUrl, setImageUrl] = useState("");
 
   const [audioUrl, setAudioUrl] = useState("");
-  const [audioStorageId, setAudioStorageId] = useState<Id<"_storage"> | null>(null);
+  const [audioStorageId, setAudioStorageId] = useState<Id<"_storage"> | null>(
+    null
+  );
   const [audioDuration, setAudioDuration] = useState(0);
 
   const [voicePrompt, setVoicePrompt] = useState("");
@@ -61,7 +65,7 @@ const CreatePodcast = () => {
 
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const createPodcast = useMutation(api.podcasts.CreatePodcast);
+  const createPodcast = useMutation(api.podcasts.createPodcast);
 
   const { toast } = useToast();
 
@@ -105,7 +109,7 @@ const CreatePodcast = () => {
         title: "Podcast created",
       });
       setIsSubmitting(false);
-      router.push('/');
+      router.push("/");
     } catch (error) {
       console.log(error);
       toast({
@@ -150,18 +154,29 @@ const CreatePodcast = () => {
                 Select AI Voice
               </Label>
               <Select onValueChange={(value) => setVoiceType(value)}>
-                <SelectTrigger className={cn("text-16 w-full border-none bg-black-1 text-gray-1 focus-visible:ring-offset-orange-1")}>
-                  <SelectValue placeholder="Select AI Voice" className="placeholder:text-gray-1" />
+                <SelectTrigger
+                  className={cn(
+                    "text-16 w-full border-none bg-black-1 text-gray-1 focus-visible:ring-offset-orange-1"
+                  )}
+                >
+                  <SelectValue
+                    placeholder="Select AI Voice"
+                    className="placeholder:text-gray-1"
+                  />
                 </SelectTrigger>
                 <SelectContent className="text-16 border-none bg-black-1 font-bold text-white-1 focus:ring-offset-orange-1">
                   {voiceCategories.map((category) => (
-                    <SelectItem className="capitalize focus:bg-orange-1" key={category} value={category}>
+                    <SelectItem
+                      className="capitalize focus:bg-orange-1"
+                      key={category}
+                      value={category}
+                    >
                       {category}
                     </SelectItem>
                   ))}
                 </SelectContent>
                 {voiceType && (
-                  <audio 
+                  <audio
                     src={`/${voiceType}.mp3`}
                     autoPlay
                     className="hidden"
@@ -210,7 +225,10 @@ const CreatePodcast = () => {
             />
 
             <div className="mt-10 w-full">
-              <Button type="submit" className="text-16 w-full bg-orange-1 py-4 font-extrabold text-white-1 transition-all duration-500 hover:bg-black-1">
+              <Button
+                type="submit"
+                className="text-16 w-full bg-orange-1 py-4 font-extrabold text-white-1 transition-all duration-500 hover:bg-black-1"
+              >
                 {isSubmitting ? (
                   <>
                     Submitting
