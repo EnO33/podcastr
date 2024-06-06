@@ -161,7 +161,7 @@ const PodcastPlayer = () => {
         </div>
         <div className="flex items-center gap-6">
           <h2 className="text-16 font-normal text-white-2 max-md:hidden">
-            {formatTime(duration)}
+            {formatTime(currentTime)} {formatTime(duration)}
           </h2>
           <div className="flex w-full gap-2">
             <Image
