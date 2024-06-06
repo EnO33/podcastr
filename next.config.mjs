@@ -17,6 +17,10 @@ const nextConfig = {
           protocol: 'https',
           hostname: 'img.clerk.com'
         },
+        {
+          protocol: 'https',
+          hostname: 'ideal-cobra-656.convex.cloud'
+        }
       ]
     }
   };
