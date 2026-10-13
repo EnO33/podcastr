@@ -1,13 +1,19 @@
 import { action } from "./_generated/server";
-import { v } from "convex/values";
+import { ConvexError, v } from "convex/values";
 
 const ELEVENLABS_API_URL = "https://api.elevenlabs.io/v1";
 const ELEVENLABS_MODEL_ID = "eleven_multilingual_v2";
 
+// Surfaces ElevenLabs' own error message (e.g. missing_permissions) instead of a bare status code.
+const throwElevenLabsError = async (label: string, response: Response): Promise<never> => {
+  const body = await response.text();
+  throw new ConvexError(`ElevenLabs ${label} failed (${response.status}): ${body}`);
+};
+
 const getApiKey = () => {
   const apiKey = process.env.ELEVENLABS_API_KEY;
   if (!apiKey) {
-    throw new Error("ELEVENLABS_API_KEY is not set");
+    throw new ConvexError("ELEVENLABS_API_KEY is not set on this Convex deployment");
   }
   return apiKey;
 };
@@ -27,7 +33,7 @@ export const listVoicesAction = action({
     });
 
     if (!response.ok) {
-      throw new Error(`ElevenLabs voices request failed: ${response.status}`);
+      await throwElevenLabsError("voices request", response);
     }
 
     const { voices } = (await response.json()) as { voices: ElevenLabsVoice[] };
@@ -64,7 +70,7 @@ export const generateAudioAction = action({
     );
 
     if (!response.ok) {
-      throw new Error(`ElevenLabs TTS request failed: ${response.status}`);
+      await throwElevenLabsError("TTS request", response);
     }
 
     return await response.arrayBuffer();

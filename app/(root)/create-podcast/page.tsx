@@ -36,6 +36,7 @@ import { Id } from "@/convex/_generated/dataModel";
 import { title } from "process";
 import { useToast } from "@/components/ui/use-toast";
 import { useAction, useMutation } from "convex/react";
+import { ConvexError } from "convex/values";
 import { api } from "@/convex/_generated/api";
 import { useRouter } from "next/navigation";
 import {
@@ -84,6 +85,7 @@ const CreatePodcast = () => {
         console.log("Error loading ElevenLabs voices", error);
         toast({
           title: "Could not load ElevenLabs voices",
+          description: error instanceof ConvexError ? String(error.data) : undefined,
           variant: "destructive",
         });
       });
