@@ -10,6 +10,7 @@ import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/components/ui/use-toast";
 import { api } from "@/convex/_generated/api";
+import { parseVoiceType } from "@/lib/voices";
 
 const useGeneratePodcast = ({
   setAudio,
@@ -25,22 +26,34 @@ const useGeneratePodcast = ({
 
   const getAudioUrl = useMutation(api.podcasts.getUrl);
 
-  const getPodcastAudio = useAction(api.openai.generateAudioAction);
+  const getOpenAIAudio = useAction(api.openai.generateAudioAction);
+  const getElevenLabsAudio = useAction(api.elevenlabs.generateAudioAction);
 
   const generatePodcast = async () => {
     setIsGenerating(true);
     setAudio("");
 
+    if (!voiceType) {
+      toast({
+        title: "Please select a voice to generate a podcast",
+      });
+      return setIsGenerating(false);
+    }
+
     if (!voicePrompt) {
       toast({
-        title: "Please provide a voice type to generate a podcast",
+        title: "Please provide some text to generate a podcast",
       });
       return setIsGenerating(false);
     }
 
     try {
-      const response = await getPodcastAudio({
-        voice: voiceType,
+      const { provider, voiceId } = parseVoiceType(voiceType);
+      const generateAudio =
+        provider === "elevenlabs" ? getElevenLabsAudio : getOpenAIAudio;
+
+      const response = await generateAudio({
+        voice: voiceId,
         input: voicePrompt,
       });
 

@@ -1,36 +1,54 @@
-This is a [Next.js](https://nextjs.org/) project bootstrapped with [`create-next-app`](https://github.com/vercel/next.js/tree/canary/packages/create-next-app).
+# Podcastr
 
-## Getting Started
+Type some text, pick a voice, get a podcast episode. Cover image generated too.
 
-First, run the development server:
+Started from the JavaScript Mastery "Podcastr" tutorial to learn Convex and Clerk, then I made it my own. The main thing I added: **ElevenLabs as a second voice provider** next to OpenAI, with the voice list pulled live from your ElevenLabs account and preview on select.
+
+## What it does
+
+- Generate the episode audio from text, with **OpenAI TTS** or **ElevenLabs** (`eleven_multilingual_v2`)
+- Pick a voice and hear a preview before generating
+- Generate a cover image from a prompt, or upload your own
+- Publish, browse, search and listen with a persistent player
+- Profiles, view counts, "similar podcasts" by voice
+
+## How the voice providers work
+
+Both providers are Convex actions that return an MP3 buffer, which is then uploaded to Convex storage.
+
+- `convex/openai.ts`: OpenAI `tts-1` with the six built-in voices
+- `convex/elevenlabs.ts`: `listVoicesAction` fetches the voices available on your ElevenLabs account, `generateAudioAction` calls the text-to-speech endpoint
+- `lib/voices.ts`: ElevenLabs voices are stored as `elevenlabs:<voiceId>` in the existing `voiceType` field, so old podcasts keep working with no schema migration
+
+## Stack
+
+Next.js 14 (App Router), TypeScript, Convex (database, storage, actions), Clerk, Tailwind CSS, shadcn/ui, OpenAI API, ElevenLabs API.
+
+## Run it locally
+
+```bash
+npm install
+npx convex dev
+```
+
+Then set the server-side keys on your Convex deployment:
+
+```bash
+npx convex env set OPENAI_API_KEY sk-...
+npx convex env set ELEVENLABS_API_KEY ...
+npx convex env set CLERK_WEBHOOK_SECRET whsec_...
+```
+
+And in `.env.local`:
+
+```bash
+NEXT_PUBLIC_CONVEX_URL=...
+NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY=pk_...
+CLERK_SECRET_KEY=sk_...
+```
 
 ```bash
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
-
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
-
-This project uses [`next/font`](https://nextjs.org/docs/basic-features/font-optimization) to automatically optimize and load Inter, a custom Google Font.
-
-## Learn More
-
-To learn more about Next.js, take a look at the following resources:
-
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js/) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/deployment) for more details.
+Demo: [podcastr-lemon.vercel.app](https://podcastr-lemon.vercel.app) (the deployed version may not have the ElevenLabs provider yet)

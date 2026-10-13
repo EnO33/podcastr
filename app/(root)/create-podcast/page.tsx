@@ -27,7 +27,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Textarea } from "@/components/ui/textarea";
 import GeneratePodcast from "@/components/GeneratePodcast";
 import GenerateThumbnail from "@/components/GenerateThumbnail";
@@ -35,11 +35,15 @@ import { Loader2 } from "lucide-react";
 import { Id } from "@/convex/_generated/dataModel";
 import { title } from "process";
 import { useToast } from "@/components/ui/use-toast";
-import { useMutation } from "convex/react";
+import { useAction, useMutation } from "convex/react";
 import { api } from "@/convex/_generated/api";
 import { useRouter } from "next/navigation";
-
-const voiceCategories = ["alloy", "shimmer", "nova", "echo", "fable", "onyx"];
+import {
+  VoiceProvider,
+  openAIVoices,
+  parseVoiceType,
+  toVoiceType,
+} from "@/lib/voices";
 
 const formSchema = z.object({
   podcastTitle: z.string().min(2),
@@ -61,13 +65,48 @@ const CreatePodcast = () => {
   const [audioDuration, setAudioDuration] = useState(0);
 
   const [voicePrompt, setVoicePrompt] = useState("");
+  const [voiceProvider, setVoiceProvider] = useState<VoiceProvider>("openai");
   const [voiceType, setVoiceType] = useState<string | null>(null);
+  const [elevenLabsVoices, setElevenLabsVoices] = useState<
+    { id: string; name: string; previewUrl: string | null }[] | null
+  >(null);
+
+  const { toast } = useToast();
+
+  const listElevenLabsVoices = useAction(api.elevenlabs.listVoicesAction);
+
+  useEffect(() => {
+    if (voiceProvider !== "elevenlabs" || elevenLabsVoices) return;
+
+    listElevenLabsVoices()
+      .then(setElevenLabsVoices)
+      .catch((error) => {
+        console.log("Error loading ElevenLabs voices", error);
+        toast({
+          title: "Could not load ElevenLabs voices",
+          variant: "destructive",
+        });
+      });
+  }, [voiceProvider, elevenLabsVoices, listElevenLabsVoices, toast]);
+
+  const voiceOptions =
+    voiceProvider === "elevenlabs"
+      ? (elevenLabsVoices ?? []).map((voice) => ({
+          value: toVoiceType("elevenlabs", voice.id),
+          label: voice.name,
+        }))
+      : openAIVoices.map((voice) => ({ value: voice, label: voice }));
+
+  const voicePreviewUrl = (() => {
+    if (!voiceType) return null;
+    const { provider, voiceId } = parseVoiceType(voiceType);
+    if (provider === "openai") return `/${voiceId}.mp3`;
+    return elevenLabsVoices?.find((voice) => voice.id === voiceId)?.previewUrl ?? null;
+  })();
 
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const createPodcast = useMutation(api.podcasts.createPodcast);
-
-  const { toast } = useToast();
 
   // 1. Define your form.
   const form = useForm<z.infer<typeof formSchema>>({
@@ -151,36 +190,68 @@ const CreatePodcast = () => {
 
             <div className="flex flex-col gap-2.5">
               <Label className="text-16 font-bold text-white-1">
-                Select AI Voice
+                Voice provider
               </Label>
-              <Select onValueChange={(value) => setVoiceType(value)}>
+              <Select
+                value={voiceProvider}
+                onValueChange={(value) => {
+                  setVoiceProvider(value as VoiceProvider);
+                  setVoiceType(null);
+                }}
+              >
+                <SelectTrigger
+                  className={cn(
+                    "text-16 w-full border-none bg-black-1 text-gray-1 focus-visible:ring-offset-orange-1"
+                  )}
+                >
+                  <SelectValue className="placeholder:text-gray-1" />
+                </SelectTrigger>
+                <SelectContent className="text-16 border-none bg-black-1 font-bold text-white-1 focus:ring-offset-orange-1">
+                  <SelectItem className="focus:bg-orange-1" value="openai">
+                    OpenAI
+                  </SelectItem>
+                  <SelectItem className="focus:bg-orange-1" value="elevenlabs">
+                    ElevenLabs
+                  </SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="flex flex-col gap-2.5">
+              <Label className="text-16 font-bold text-white-1">
+                Select Voice
+              </Label>
+              <Select
+                value={voiceType ?? ""}
+                onValueChange={(value) => setVoiceType(value)}
+              >
                 <SelectTrigger
                   className={cn(
                     "text-16 w-full border-none bg-black-1 text-gray-1 focus-visible:ring-offset-orange-1"
                   )}
                 >
                   <SelectValue
-                    placeholder="Select AI Voice"
+                    placeholder={
+                      voiceProvider === "elevenlabs" && !elevenLabsVoices
+                        ? "Loading ElevenLabs voices..."
+                        : "Select Voice"
+                    }
                     className="placeholder:text-gray-1"
                   />
                 </SelectTrigger>
                 <SelectContent className="text-16 border-none bg-black-1 font-bold text-white-1 focus:ring-offset-orange-1">
-                  {voiceCategories.map((category) => (
+                  {voiceOptions.map((voice) => (
                     <SelectItem
                       className="capitalize focus:bg-orange-1"
-                      key={category}
-                      value={category}
+                      key={voice.value}
+                      value={voice.value}
                     >
-                      {category}
+                      {voice.label}
                     </SelectItem>
                   ))}
                 </SelectContent>
-                {voiceType && (
-                  <audio
-                    src={`/${voiceType}.mp3`}
-                    autoPlay
-                    className="hidden"
-                  />
+                {voicePreviewUrl && (
+                  <audio src={voicePreviewUrl} autoPlay className="hidden" />
                 )}
               </Select>
             </div>
